@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M0,0h108v108h-108z"/>
+    <!-- Budilnik oyoqchalari -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M34,80 L30,88 A2,2 0 0,0 33,90 L40,84 Z"/>
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M74,80 L78,88 A2,2 0 0,1 75,90 L68,84 Z"/>
+    <!-- Qo'ng'iroqlar -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M31,28 C26,33 25,41 29,46 L37,38 C35,32 36,25 31,28 Z"/>
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M77,28 C82,33 83,41 79,46 L71,38 C73,32 72,25 77,28 Z"/>
+    <!-- Asosiy Soat -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26 Z"/>
+    <path
+        android:fillColor="#EEF2F6"
+        android:pathData="M54,30 A24,24 0 1,0 54,78 A24,24 0 1,0 54,30 Z"/>
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M54,51 A3,3 0 1,0 54,57 A3,3 0 1,0 54,51 Z"/>
+    <path
+        android:strokeColor="#1E1B4B"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L44,44"/>
+    <path
+        android:strokeColor="#4F46E5"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L66,38"/>
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M50,22 L58,22 L58,26 L50,26 Z"/>
+</vector>
