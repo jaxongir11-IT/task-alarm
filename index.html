@@ -209,10 +209,10 @@
     <div id="alarm-ring-overlay" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
         <div class="max-w-md w-full bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/40 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden">
             <!-- Pulsatsiya nuri -->
-            <div class="absolute -top-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-16 -right-16 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute -top-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-16 -right-16 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div class="relative z-10">
+            <div class="relative z-20">
                 <!-- Budilnik animatsiyasi -->
                 <div class="w-24 h-24 mx-auto rounded-3xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-white text-4xl shadow-xl shadow-indigo-600/40 animate-ring mb-4">
                     <i class="fa-solid fa-bell text-amber-400"></i>
@@ -229,14 +229,14 @@
                 </div>
 
                 <!-- 3 ta boshqaruv tugmasi -->
-                <div class="space-y-3">
-                    <button onclick="resolveAlarm(true)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-98">
+                <div class="space-y-3 relative z-30">
+                    <button type="button" onclick="resolveAlarm(true)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-95 cursor-pointer">
                         <i class="fa-solid fa-check"></i> Bajarildi deb belgilash
                     </button>
-                    <button onclick="snoozeAlarm()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-98">
+                    <button type="button" onclick="snoozeAlarm()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer">
                         <i class="fa-solid fa-clock-rotate-left"></i> 5 daqiqaga kechiktirish (Snooze)
                     </button>
-                    <button onclick="resolveAlarm(false)" class="w-full py-2.5 text-rose-400 hover:text-rose-300 font-medium text-xs transition">
+                    <button type="button" onclick="resolveAlarm(false)" class="w-full py-2.5 text-rose-400 hover:text-rose-300 font-medium text-xs transition cursor-pointer">
                         Budilnikni to'xtatish
                     </button>
                 </div>
@@ -436,21 +436,59 @@
 
         function resolveAlarm(isCompleted) {
             stopAlarmSound();
-            document.getElementById('alarm-ring-overlay').classList.add('hidden');
+            const overlay = document.getElementById('alarm-ring-overlay');
+            if (overlay) overlay.classList.add('hidden');
+
             if (currentRingingTaskId) {
                 const task = tasks.find(t => t.id === currentRingingTaskId);
-                if (task && isCompleted) {
-                    task.completed = true;
-                    task.enabled = false;
+                if (task) {
+                    if (isCompleted) {
+                        task.completed = true;
+                        task.enabled = false;
+                        showToast("✅ Vazifa 'Bajarildi' deb belgilandi!", "emerald");
+                    } else {
+                        showToast("🛑 Budilnik to'xtatildi", "slate");
+                    }
                     saveToStorage();
+                }
+            } else {
+                if (isCompleted) {
+                    showToast("✅ Sinov vazifasi bajarildi!", "emerald");
+                } else {
+                    showToast("🛑 Sinov budilnigi to'xtatildi", "slate");
                 }
             }
         }
 
         function snoozeAlarm() {
             stopAlarmSound();
-            document.getElementById('alarm-ring-overlay').classList.add('hidden');
-            alert("⏰ Budilnik 5 daqiqaga kechiktirildi (Snooze faollashtirildi).");
+            const overlay = document.getElementById('alarm-ring-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            showToast("⏳ Budilnik 5 daqiqaga kechiktirildi (Snooze)", "amber");
+        }
+
+        function showToast(message, color = "indigo") {
+            let toast = document.getElementById('toast-msg');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-msg';
+                toast.className = 'fixed bottom-8 right-8 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold border transition duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+                document.body.appendChild(toast);
+            }
+
+            const bgColors = {
+                emerald: 'bg-emerald-950 border-emerald-500/40 text-emerald-300',
+                amber: 'bg-amber-950 border-amber-500/40 text-amber-300',
+                slate: 'bg-slate-900 border-slate-700 text-slate-200',
+                indigo: 'bg-indigo-950 border-indigo-500/40 text-indigo-300'
+            };
+
+            toast.className = `fixed bottom-8 right-8 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold border transition duration-300 transform translate-y-0 opacity-100 ${bgColors[color] || bgColors.indigo}`;
+            toast.textContent = message;
+
+            setTimeout(() => {
+                toast.className = 'fixed bottom-8 right-8 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold border transition duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+            }, 3000);
         }
 
         // 5. Dashboard renderi
