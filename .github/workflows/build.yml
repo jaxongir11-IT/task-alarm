@@ -5,6 +5,9 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,8 +30,21 @@ jobs:
     - name: Build APK
       run: gradle assembleDebug --no-daemon --stacktrace
 
-    - name: Upload APK
+    - name: Rename APK
+      run: cp app/build/outputs/apk/debug/app-debug.apk TaskAlarm.apk
+
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: TaskAlarm-apk
-        path: app/build/outputs/apk/debug/*.apk
+        path: TaskAlarm.apk
+
+    - name: Release APK
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "v1.0"
+        name: "Vazifalar Budilnigi APK (v1.0)"
+        body: "Android telefonlar uchun haqiqiy budilnikli Vazifalar Budilnigi ilovasi."
+        files: TaskAlarm.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
