@@ -125,10 +125,15 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val bigTextStyle = NotificationCompat.BigTextStyle()
+            .setBigContentTitle("⏰ $title")
+            .bigText(if (desc.isNotBlank()) "$desc\n(Budilnik chalinmoqda...)" else "Vaqt keldi! Vazifani bajaring.")
+
         val notification = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("⏰ $title")
             .setContentText(if (desc.isNotBlank()) desc else "Vaqt keldi! Vazifani bajaring.")
+            .setStyle(bigTextStyle)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -136,9 +141,9 @@ class AlarmService : Service() {
             .setAutoCancel(false)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setContentIntent(fullScreenPendingIntent)
-            .addAction(android.R.drawable.checkbox_on_background, "Bajarildi", completePendingIntent)
-            .addAction(android.R.drawable.ic_popup_sync, "5 daqiqa (Snooze)", snoozePendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "O'chirish", stopPendingIntent)
+            .addAction(android.R.drawable.checkbox_on_background, "✅ Bajarildi", completePendingIntent)
+            .addAction(android.R.drawable.ic_popup_sync, "⏳ 5 daqiqa", snoozePendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "❌ O'chirish", stopPendingIntent)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
