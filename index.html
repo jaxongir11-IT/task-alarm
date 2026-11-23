@@ -206,11 +206,12 @@
     </div>
 
     <!-- 3. KATTA KOMPYUTER UCHUN BUDILNIK CHALINISH OYNASI (FULL-SCREEN ALARM MODAL) -->
-    <div id="alarm-ring-overlay" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="max-w-md w-full bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/40 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden">
-            <!-- Pulsatsiya nuri -->
-            <div class="absolute -top-16 -left-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-16 -right-16 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div id="alarm-ring-overlay" style="display: none;" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/40 rounded-3xl p-8 text-center shadow-2xl relative">
+            <!-- Yopish "X" tugmasi -->
+            <button type="button" onclick="closeAlarmNow('Yopildi')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer z-40">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
 
             <div class="relative z-20">
                 <!-- Budilnik animatsiyasi -->
@@ -230,13 +231,13 @@
 
                 <!-- 3 ta boshqaruv tugmasi -->
                 <div class="space-y-3 relative z-30">
-                    <button type="button" onclick="resolveAlarm(true)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-95 cursor-pointer">
+                    <button type="button" id="btn-complete-alarm" onclick="handleAlarmAction('complete')" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer">
                         <i class="fa-solid fa-check"></i> Bajarildi deb belgilash
                     </button>
-                    <button type="button" onclick="snoozeAlarm()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer">
+                    <button type="button" id="btn-snooze-alarm" onclick="handleAlarmAction('snooze')" class="w-full py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-amber-400 border border-amber-500/30 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
                         <i class="fa-solid fa-clock-rotate-left"></i> 5 daqiqaga kechiktirish (Snooze)
                     </button>
-                    <button type="button" onclick="resolveAlarm(false)" class="w-full py-2.5 text-rose-400 hover:text-rose-300 font-medium text-xs transition cursor-pointer">
+                    <button type="button" id="btn-dismiss-alarm" onclick="handleAlarmAction('dismiss')" class="w-full py-2.5 text-rose-400 hover:text-rose-300 active:text-rose-500 font-medium text-xs transition cursor-pointer">
                         Budilnikni to'xtatish
                     </button>
                 </div>
@@ -426,45 +427,55 @@
             document.getElementById('ring-time').textContent = task ? task.time : document.getElementById('live-time').textContent.substring(0, 5);
             document.getElementById('ring-title').textContent = task ? task.title : "Sinov Budilnigi";
             document.getElementById('ring-desc').textContent = task && task.desc ? task.desc : "Belgilangan vaqt keldi! Vazifani bajaring.";
-            document.getElementById('alarm-ring-overlay').classList.remove('hidden');
-            startAlarmSound();
+            
+            const overlay = document.getElementById('alarm-ring-overlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.classList.remove('hidden');
+            }
+            try {
+                startAlarmSound();
+            } catch (e) {
+                console.error("Audio xatosi:", e);
+            }
         }
 
         function triggerTestAlarm() {
             triggerAlarmModal(null);
         }
 
-        function resolveAlarm(isCompleted) {
-            stopAlarmSound();
+        function closeAlarmNow(toastText = null, toastColor = "slate") {
+            try {
+                stopAlarmSound();
+            } catch (e) {
+                console.error("Audio stop xatosi:", e);
+            }
             const overlay = document.getElementById('alarm-ring-overlay');
-            if (overlay) overlay.classList.add('hidden');
-
-            if (currentRingingTaskId) {
-                const task = tasks.find(t => t.id === currentRingingTaskId);
-                if (task) {
-                    if (isCompleted) {
-                        task.completed = true;
-                        task.enabled = false;
-                        showToast("✅ Vazifa 'Bajarildi' deb belgilandi!", "emerald");
-                    } else {
-                        showToast("🛑 Budilnik to'xtatildi", "slate");
-                    }
-                    saveToStorage();
-                }
-            } else {
-                if (isCompleted) {
-                    showToast("✅ Sinov vazifasi bajarildi!", "emerald");
-                } else {
-                    showToast("🛑 Sinov budilnigi to'xtatildi", "slate");
-                }
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.classList.add('hidden');
+            }
+            if (toastText) {
+                showToast(toastText, toastColor);
             }
         }
 
-        function snoozeAlarm() {
-            stopAlarmSound();
-            const overlay = document.getElementById('alarm-ring-overlay');
-            if (overlay) overlay.classList.add('hidden');
-            showToast("⏳ Budilnik 5 daqiqaga kechiktirildi (Snooze)", "amber");
+        function handleAlarmAction(action) {
+            if (action === 'complete') {
+                if (currentRingingTaskId) {
+                    const task = tasks.find(t => t.id === currentRingingTaskId);
+                    if (task) {
+                        task.completed = true;
+                        task.enabled = false;
+                        saveToStorage();
+                    }
+                }
+                closeAlarmNow("✅ Vazifa 'Bajarildi' deb belgilandi!", "emerald");
+            } else if (action === 'snooze') {
+                closeAlarmNow("⏳ Budilnik 5 daqiqaga kechiktirildi (Snooze)", "amber");
+            } else {
+                closeAlarmNow("🛑 Budilnik to'xtatildi", "slate");
+            }
         }
 
         function showToast(message, color = "indigo") {
