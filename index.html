@@ -333,9 +333,9 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
+                    <div id="date-input-wrapper">
                         <label class="block text-slate-300 font-semibold mb-1">Sana</label>
-                        <input id="input-date" required type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        <input id="input-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="block text-slate-300 font-semibold mb-1">Budilnik Vaqti</label>
@@ -426,73 +426,115 @@
             0: "Yakshanba"
         };
 
-        // 1. Dastlabki namunaviy ma'lumotlar (real ishlash namunalari bilan)
-        const defaultTasks = [
-            {
-                id: 1,
-                title: "Ustozga loyihani taqdim etish",
-                desc: "Vazifalar Budilnigi dasturi va kodlarini ko'rsatish",
-                date: new Date().toISOString().split('T')[0],
-                time: "18:00",
-                repeat: "once",
-                customDays: [],
-                enabled: true,
-                completed: false
-            },
-            {
-                id: 2,
-                title: "Ertalabki badantarbiya va yugurish",
-                desc: "Har kuni ertalab salomatlik uchun 20 daqiqa mashq",
-                date: new Date().toISOString().split('T')[0],
-                time: "07:00",
-                repeat: "daily",
-                customDays: [],
-                enabled: true,
-                completed: false
-            },
-            {
-                id: 3,
-                title: "Ingliz tili darsi va speaking",
-                desc: "Dushanba, Chorshanba va Juma kunlari repetitor bilan dars",
-                date: new Date().toISOString().split('T')[0],
-                time: "15:30",
-                repeat: "custom",
-                customDays: [1, 3, 5], // Du, Ch, Ju
-                enabled: true,
-                completed: false
-            },
-            {
-                id: 4,
-                title: "Suzish mashg'uloti",
-                desc: "Seshanba, Payshanba va Shanba kunlari hovuzda shug'ullanish",
-                date: new Date().toISOString().split('T')[0],
-                time: "17:00",
-                repeat: "custom",
-                customDays: [2, 4, 6], // Se, Pa, Sha
-                enabled: true,
-                completed: false
-            },
-            {
-                id: 5,
-                title: "Kitob mutolaasi",
-                desc: "Har kuni uxlashdan oldin 15 sahifa o'qish",
-                date: new Date().toISOString().split('T')[0],
-                time: "22:00",
-                repeat: "daily",
-                customDays: [],
-                enabled: true,
-                completed: false
-            }
-        ];
+        // Lokal sanani xatosiz YYYY-MM-DD formatida olish (UTC+5 O'zbekiston vaqti uchun xavfsiz)
+        function getLocalDateStr(dateObj = new Date()) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
-        let tasks = JSON.parse(localStorage.getItem('task_alarm_desktop_data')) || defaultTasks;
+        // 1. Dastlabki namunaviy ma'lumotlar (real ishlash namunalari bilan)
+        function createDefaultTasks() {
+            const today = getLocalDateStr();
+            return [
+                {
+                    id: 1,
+                    title: "Ustozga loyihani taqdim etish",
+                    desc: "Vazifalar Budilnigi dasturi va kodlarini ko'rsatish",
+                    date: today,
+                    time: "18:00",
+                    repeat: "once",
+                    customDays: [],
+                    enabled: true,
+                    completed: false,
+                    lastCompletedDate: null
+                },
+                {
+                    id: 2,
+                    title: "Ertalabki badantarbiya va yugurish",
+                    desc: "Har kuni ertalab salomatlik uchun 20 daqiqa mashq",
+                    date: today,
+                    time: "07:00",
+                    repeat: "daily",
+                    customDays: [],
+                    enabled: true,
+                    completed: false,
+                    lastCompletedDate: null
+                },
+                {
+                    id: 3,
+                    title: "Ingliz tili darsi va speaking",
+                    desc: "Dushanba, Chorshanba va Juma kunlari repetitor bilan dars",
+                    date: today,
+                    time: "15:30",
+                    repeat: "custom",
+                    customDays: [1, 3, 5], // Du, Ch, Ju
+                    enabled: true,
+                    completed: false,
+                    lastCompletedDate: null
+                },
+                {
+                    id: 4,
+                    title: "Suzish mashg'uloti",
+                    desc: "Seshanba, Payshanba va Shanba kunlari hovuzda shug'ullanish",
+                    date: today,
+                    time: "17:00",
+                    repeat: "custom",
+                    customDays: [2, 4, 6], // Se, Pa, Sha
+                    enabled: true,
+                    completed: false,
+                    lastCompletedDate: null
+                },
+                {
+                    id: 5,
+                    title: "Kitob mutolaasi",
+                    desc: "Har kuni uxlashdan oldin 15 sahifa o'qish",
+                    date: today,
+                    time: "22:00",
+                    repeat: "daily",
+                    customDays: [],
+                    enabled: true,
+                    completed: false,
+                    lastCompletedDate: null
+                }
+            ];
+        }
+
+        let tasks = [];
+        try {
+            const raw = localStorage.getItem('task_alarm_desktop_data');
+            tasks = raw ? JSON.parse(raw) : createDefaultTasks();
+        } catch (e) {
+            tasks = createDefaultTasks();
+        }
+
+        // Eski xotirada custom/daily namunalar bo'lmasa bir marta qo'shish
+        if (!localStorage.getItem('task_alarm_v2_seeded')) {
+            const defaults = createDefaultTasks();
+            const hasCustom = tasks.some(t => t.repeat === 'custom');
+            const hasDaily = tasks.some(t => t.repeat === 'daily');
+            if (!hasCustom) tasks.push(defaults[2], defaults[3]);
+            if (!hasDaily) tasks.push(defaults[1], defaults[4]);
+            localStorage.setItem('task_alarm_v2_seeded', '1');
+            localStorage.setItem('task_alarm_desktop_data', JSON.stringify(tasks));
+        }
+
         let activeView = 'all';
         let currentRingingTaskId = null;
+        let currentRingingTaskObj = null;
         let selectedCustomDays = [];
+        let snoozeTimers = {};
+        let lastCheckedMinute = "";
 
         function saveToStorage() {
             localStorage.setItem('task_alarm_desktop_data', JSON.stringify(tasks));
             renderDashboard();
+        }
+
+        function isTaskCompletedToday(task, todayStr) {
+            if (task.repeat === 'once') return !!task.completed;
+            return task.lastCompletedDate === todayStr;
         }
 
         // 2. Jonli Soat
@@ -507,24 +549,23 @@
             const months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
             document.getElementById('live-date').textContent = `${days[now.getDay()]}, ${now.getDate()}-${months[now.getMonth()]}`;
 
-            // Har daqiqada avtomatik budilnik tekshiruvi!
-            checkAlarmTriggers(now, `${h}:${m}`);
+            const currentHM = `${h}:${m}`;
+            if (currentHM !== lastCheckedMinute) {
+                lastCheckedMinute = currentHM;
+                checkAlarmTriggers(now, currentHM);
+                renderDashboard();
+            }
         }
         setInterval(updateLiveClock, 1000);
         updateLiveClock();
 
         // 3. Budilnik vaqtini tekshirish (REAL ISHLASH MANTIQI)
-        let triggeredThisMinute = false;
         function checkAlarmTriggers(dateObj, currentTimeStr) {
-            const todayStr = dateObj.toISOString().split('T')[0];
+            const todayStr = getLocalDateStr(dateObj);
             const currentDayOfWeek = dateObj.getDay(); // 0..6
-            const seconds = dateObj.getSeconds();
 
-            if (seconds === 0) triggeredThisMinute = false;
-            if (triggeredThisMinute) return;
-
-            tasks.forEach(t => {
-                if (t.enabled && !t.completed && t.time === currentTimeStr) {
+            for (const t of tasks) {
+                if (t.enabled && !isTaskCompletedToday(t, todayStr) && t.time === currentTimeStr) {
                     let isDue = false;
 
                     if (t.repeat === 'daily') {
@@ -538,11 +579,63 @@
                     }
 
                     if (isDue) {
-                        triggeredThisMinute = true;
                         triggerAlarmModal(t);
+                        break;
                     }
                 }
-            });
+            }
+        }
+
+        function getNextTriggerDate(task, now = new Date()) {
+            const [hh, mm] = (task.time || "00:00").split(':').map(Number);
+            if (isNaN(hh) || isNaN(mm)) return null;
+
+            if (task.repeat === 'once') {
+                const [y, m, d] = (task.date || getLocalDateStr(now)).split('-').map(Number);
+                return new Date(y, m - 1, d, hh, mm, 0, 0);
+            }
+
+            const todayStr = getLocalDateStr(now);
+            const completedToday = isTaskCompletedToday(task, todayStr);
+
+            for (let offset = 0; offset <= 7; offset++) {
+                if (offset === 0 && completedToday) continue;
+
+                const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, hh, mm, 0, 0);
+                if (candidate.getTime() <= now.getTime()) continue;
+
+                const day = candidate.getDay();
+                if (task.repeat === 'daily') return candidate;
+                if (task.repeat === 'weekdays' && [1, 2, 3, 4, 5].includes(day)) return candidate;
+                if (task.repeat === 'custom' && Array.isArray(task.customDays) && task.customDays.includes(day)) return candidate;
+            }
+            return null;
+        }
+
+        function formatRemainingTime(task, now = new Date()) {
+            const todayStr = getLocalDateStr(now);
+            if (task.repeat === 'once' && task.completed) return "Yakunlangan";
+            if (task.repeat !== 'once' && isTaskCompletedToday(task, todayStr)) {
+                const next = getNextTriggerDate(task, now);
+                if (next) return `Bugun bajarildi • Keyingi: ${fullDayNamesMap[next.getDay()]}`;
+                return "Bugun bajarildi";
+            }
+            if (!task.enabled) return "O'chirilgan";
+
+            const next = getNextTriggerDate(task, now);
+            if (!next) return "Vaqti o'tgan";
+
+            const diffMs = next.getTime() - now.getTime();
+            if (diffMs <= 0) return "Vaqti o'tgan";
+
+            const totalMins = Math.ceil(diffMs / 60000);
+            const days = Math.floor(totalMins / (60 * 24));
+            const hours = Math.floor((totalMins % (60 * 24)) / 60);
+            const mins = totalMins % 60;
+
+            if (days > 0) return `${days} kun ${hours} soatdan keyin`;
+            if (hours > 0) return `${hours} soat ${mins} daqiqadan keyin`;
+            return `${mins} daqiqadan keyin`;
         }
 
         // 4. Web Audio API orqali baland va haqiqiy budilnik ovozi
@@ -579,10 +672,11 @@
 
         function triggerAlarmModal(task) {
             currentRingingTaskId = task ? task.id : null;
+            currentRingingTaskObj = task || null;
             document.getElementById('ring-time').textContent = task ? task.time : document.getElementById('live-time').textContent.substring(0, 5);
             document.getElementById('ring-title').textContent = task ? task.title : "Sinov Budilnigi";
             document.getElementById('ring-desc').textContent = task && task.desc ? task.desc : "Belgilangan vaqt keldi! Vazifani bajaring.";
-            
+
             const overlay = document.getElementById('alarm-ring-overlay');
             if (overlay) {
                 overlay.style.display = 'flex';
@@ -593,9 +687,20 @@
             } catch (e) {
                 console.error("Audio xatosi:", e);
             }
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification("⏰ " + (task ? task.title : "Vazifalar Budilnigi"), {
+                        body: task && task.desc ? task.desc : "Belgilangan vaqt keldi!"
+                    });
+                } catch (e) {}
+            }
         }
 
         function triggerTestAlarm() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission().catch(() => {});
+            }
             triggerAlarmModal(null);
         }
 
@@ -616,18 +721,36 @@
         }
 
         function handleAlarmAction(action) {
+            const todayStr = getLocalDateStr();
             if (action === 'complete') {
                 if (currentRingingTaskId) {
                     const task = tasks.find(t => t.id === currentRingingTaskId);
                     if (task) {
-                        task.completed = true;
-                        task.enabled = false;
+                        if (task.repeat === 'once') {
+                            task.completed = true;
+                            task.enabled = false;
+                        } else {
+                            task.lastCompletedDate = todayStr;
+                        }
                         saveToStorage();
                     }
                 }
                 closeAlarmNow("✅ Vazifa 'Bajarildi' deb belgilandi!", "emerald");
             } else if (action === 'snooze') {
-                closeAlarmNow("⏳ Budilnik 5 daqiqaga kechiktirildi (Snooze)", "amber");
+                const taskCopy = currentRingingTaskObj ? { ...currentRingingTaskObj } : {
+                    id: null,
+                    title: "Kechiktirilgan Budilnik (Snooze)",
+                    desc: "5 daqiqalik eslatma vaqti keldi!",
+                    time: document.getElementById('ring-time').textContent
+                };
+                const snoozeKey = taskCopy.id || 'test';
+                if (snoozeTimers[snoozeKey]) clearTimeout(snoozeTimers[snoozeKey]);
+                snoozeTimers[snoozeKey] = setTimeout(() => {
+                    const now = new Date();
+                    taskCopy.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    triggerAlarmModal(taskCopy);
+                }, 5 * 60 * 1000);
+                closeAlarmNow("⏳ Budilnik 5 daqiqaga kechiktirildi (Snooze faol)", "amber");
             } else {
                 closeAlarmNow("🛑 Budilnik to'xtatildi", "slate");
             }
@@ -661,10 +784,23 @@
         function toggleCustomDaysVisibility() {
             const repeatVal = document.getElementById('input-repeat').value;
             const picker = document.getElementById('custom-days-picker');
+            const dateWrapper = document.getElementById('date-input-wrapper');
+            const dateInput = document.getElementById('input-date');
+
             if (repeatVal === 'custom') {
                 picker.classList.remove('hidden');
             } else {
                 picker.classList.add('hidden');
+            }
+
+            if (dateWrapper && dateInput) {
+                if (repeatVal === 'once') {
+                    dateWrapper.classList.remove('opacity-40', 'pointer-events-none');
+                    dateInput.disabled = false;
+                } else {
+                    dateWrapper.classList.add('opacity-40', 'pointer-events-none');
+                    dateInput.disabled = true;
+                }
             }
         }
 
@@ -747,16 +883,16 @@
 
         function renderDashboard() {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = getLocalDateStr(now);
             const currentDayOfWeek = now.getDay(); // 0..6
 
             // Hisob-kitoblar
             const total = tasks.length;
-            const todayCount = tasks.filter(t => !t.completed && isTaskDueToday(t, todayStr, currentDayOfWeek)).length;
-            const dailyCount = tasks.filter(t => !t.completed && t.repeat === 'daily').length;
-            const customCount = tasks.filter(t => !t.completed && t.repeat === 'custom').length;
+            const todayCount = tasks.filter(t => !isTaskCompletedToday(t, todayStr) && isTaskDueToday(t, todayStr, currentDayOfWeek)).length;
+            const dailyCount = tasks.filter(t => t.repeat === 'daily').length;
+            const customCount = tasks.filter(t => t.repeat === 'custom').length;
             const upcomingCount = tasks.filter(t => !t.completed && t.repeat === 'once' && t.date > todayStr).length;
-            const completedCount = tasks.filter(t => t.completed).length;
+            const completedCount = tasks.filter(t => isTaskCompletedToday(t, todayStr)).length;
 
             document.getElementById('count-all').textContent = total;
             document.getElementById('count-today').textContent = todayCount;
@@ -773,7 +909,7 @@
             // Filtrlash
             let list = [];
             if (activeView === 'today') {
-                list = tasks.filter(t => !t.completed && isTaskDueToday(t, todayStr, currentDayOfWeek));
+                list = tasks.filter(t => isTaskDueToday(t, todayStr, currentDayOfWeek) && !t.completed);
             } else if (activeView === 'daily') {
                 list = tasks.filter(t => t.repeat === 'daily');
             } else if (activeView === 'custom') {
@@ -781,7 +917,7 @@
             } else if (activeView === 'upcoming') {
                 list = tasks.filter(t => !t.completed && t.repeat === 'once' && t.date > todayStr);
             } else if (activeView === 'completed') {
-                list = tasks.filter(t => t.completed);
+                list = tasks.filter(t => isTaskCompletedToday(t, todayStr));
             } else {
                 list = [...tasks];
             }
@@ -797,8 +933,9 @@
             emptyState.classList.add('hidden');
 
             list.forEach(task => {
+                const doneToday = isTaskCompletedToday(task, todayStr);
                 const card = document.createElement('div');
-                card.className = `p-5 rounded-2xl border transition duration-200 flex flex-col justify-between ${task.completed ? 'bg-slate-900/40 border-slate-800 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700 shadow-sm'}`;
+                card.className = `p-5 rounded-2xl border transition duration-200 flex flex-col justify-between ${doneToday ? 'bg-slate-900/40 border-slate-800 opacity-70' : 'bg-slate-900 border-slate-800 hover:border-slate-700 shadow-sm'}`;
 
                 // Takrorlanish yorlig'i va nishonlari
                 let repeatBadgeHtml = '';
@@ -825,48 +962,50 @@
                 }
 
                 // Bugun chalinadimi yoki yo'q indikatori
-                const todayStatusIndicator = (dueToday && !task.completed && task.enabled) 
+                const todayStatusIndicator = (dueToday && !doneToday && task.enabled) 
                     ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-bell text-[9px]"></i> Bugun chalinadi</span>`
                     : '';
+
+                const remainingText = formatRemainingTime(task, now);
 
                 card.innerHTML = `
                     <div>
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
-                                <button onclick="toggleTaskComplete(${task.id})" class="w-6 h-6 rounded-lg border ${task.completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-600 hover:border-indigo-500'} flex items-center justify-center text-xs transition cursor-pointer">
-                                    ${task.completed ? '<i class="fa-solid fa-check"></i>' : ''}
+                                <button onclick="toggleTaskComplete(${task.id})" class="w-6 h-6 rounded-lg border ${doneToday ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-600 hover:border-indigo-500'} flex items-center justify-center text-xs transition cursor-pointer" title="Bajarildi deb belgilash">
+                                    ${doneToday ? '<i class="fa-solid fa-check"></i>' : ''}
                                 </button>
                                 <div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-2xl font-black font-mono ${task.enabled && !task.completed ? 'text-indigo-400' : 'text-slate-400'}">${task.time}</span>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-2xl font-black font-mono ${task.enabled && !doneToday ? 'text-indigo-400' : 'text-slate-400'}">${task.time}</span>
                                         ${repeatBadgeHtml}
                                     </div>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-xs text-slate-500">${task.repeat === 'custom' ? 'Tanlangan kunlar' : (task.repeat === 'daily' ? 'Har kunlik reja' : task.date)}</span>
+                                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                        <span class="text-xs text-slate-500">${task.repeat === 'custom' ? 'Tanlangan kunlar' : (task.repeat === 'daily' ? 'Har kunlik reja' : (task.repeat === 'weekdays' ? 'Dushanba–Juma' : task.date))}</span>
                                         ${todayStatusIndicator}
                                     </div>
                                 </div>
                             </div>
 
-                            ${!task.completed ? `
-                                <button onclick="toggleTaskEnable(${task.id})" class="w-11 h-6 rounded-full transition p-0.5 flex items-center cursor-pointer ${task.enabled ? 'bg-indigo-600 justify-end' : 'bg-slate-700 justify-start'}">
+                            ${!doneToday ? `
+                                <button onclick="toggleTaskEnable(${task.id})" class="w-11 h-6 rounded-full transition p-0.5 flex items-center cursor-pointer shrink-0 ${task.enabled ? 'bg-indigo-600 justify-end' : 'bg-slate-700 justify-start'}" title="Yoqish / O'chirish">
                                     <span class="w-5 h-5 bg-white rounded-full shadow-md"></span>
                                 </button>
                             ` : `
-                                <span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-semibold">Bajarildi</span>
+                                <span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-semibold shrink-0">Bajarildi</span>
                             `}
                         </div>
 
                         <div class="mt-4">
-                            <h4 class="text-base font-bold text-white ${task.completed ? 'line-through text-slate-500' : ''}">${task.title}</h4>
+                            <h4 class="text-base font-bold text-white ${doneToday ? 'line-through text-slate-500' : ''}">${task.title}</h4>
                             ${task.desc ? `<p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">${task.desc}</p>` : ''}
                         </div>
                     </div>
 
                     <div class="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-1.5 ${task.enabled && !task.completed ? 'text-amber-400' : 'text-slate-500'} font-medium">
+                        <span class="flex items-center gap-1.5 ${task.enabled && !doneToday ? 'text-amber-400' : 'text-slate-500'} font-medium">
                             <i class="fa-solid fa-clock text-[11px]"></i>
-                            ${task.completed ? 'Yakunlangan' : (task.enabled ? 'Budilnik faol' : "O'chirilgan")}
+                            ${remainingText}
                         </span>
 
                         <div class="flex items-center gap-2">
@@ -885,11 +1024,21 @@
 
         function toggleTaskComplete(id) {
             const task = tasks.find(t => t.id === id);
-            if (task) {
+            if (!task) return;
+            const todayStr = getLocalDateStr();
+
+            if (task.repeat === 'once') {
                 task.completed = !task.completed;
-                if (task.completed) task.enabled = false;
-                saveToStorage();
+                task.enabled = !task.completed;
+            } else {
+                if (task.lastCompletedDate === todayStr) {
+                    task.lastCompletedDate = null;
+                    task.enabled = true;
+                } else {
+                    task.lastCompletedDate = todayStr;
+                }
             }
+            saveToStorage();
         }
 
         function toggleTaskEnable(id) {
@@ -904,6 +1053,7 @@
             if (confirm("Ushbu vazifani o'chirishga ishonchingiz komilmi?")) {
                 tasks = tasks.filter(t => t.id !== id);
                 saveToStorage();
+                showToast("🗑️ Vazifa o'chirildi", "slate");
             }
         }
 
@@ -918,7 +1068,7 @@
                 editId.value = task.id;
                 document.getElementById('input-title').value = task.title;
                 document.getElementById('input-desc').value = task.desc || '';
-                document.getElementById('input-date').value = task.date;
+                document.getElementById('input-date').value = task.date || getLocalDateStr();
                 document.getElementById('input-time').value = task.time;
                 document.getElementById('input-repeat').value = task.repeat || 'once';
                 
@@ -928,11 +1078,20 @@
                 editId.value = '';
                 document.getElementById('task-form').reset();
                 const now = new Date();
-                document.getElementById('input-date').value = now.toISOString().split('T')[0];
+                document.getElementById('input-date').value = getLocalDateStr(now);
                 now.setHours(now.getHours() + 1);
                 document.getElementById('input-time').value = `${String(now.getHours()).padStart(2, '0')}:00`;
-                document.getElementById('input-repeat').value = 'once';
-                selectedCustomDays = [];
+
+                if (activeView === 'daily') {
+                    document.getElementById('input-repeat').value = 'daily';
+                    selectedCustomDays = [];
+                } else if (activeView === 'custom') {
+                    document.getElementById('input-repeat').value = 'custom';
+                    selectedCustomDays = [new Date().getDay()];
+                } else {
+                    document.getElementById('input-repeat').value = 'once';
+                    selectedCustomDays = [];
+                }
             }
 
             toggleCustomDaysVisibility();
@@ -954,13 +1113,17 @@
             const editId = document.getElementById('edit-id').value;
             const title = document.getElementById('input-title').value.trim();
             const desc = document.getElementById('input-desc').value.trim();
-            const date = document.getElementById('input-date').value;
+            const date = document.getElementById('input-date').value || getLocalDateStr();
             const time = document.getElementById('input-time').value;
             const repeat = document.getElementById('input-repeat').value;
 
             if (repeat === 'custom' && selectedCustomDays.length === 0) {
                 alert("Iltimos, budilnik chalinishi kerak bo'lgan kamida bitta hafta kunini tanlang (masalan: Du, Se, Ch...)!");
                 return;
+            }
+
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission().catch(() => {});
             }
 
             if (editId) {
@@ -974,6 +1137,7 @@
                     task.customDays = (repeat === 'custom') ? [...selectedCustomDays] : [];
                     task.enabled = true;
                     task.completed = false;
+                    task.lastCompletedDate = null;
                 }
             } else {
                 tasks.unshift({
@@ -985,7 +1149,8 @@
                     repeat,
                     customDays: (repeat === 'custom') ? [...selectedCustomDays] : [],
                     enabled: true,
-                    completed: false
+                    completed: false,
+                    lastCompletedDate: null
                 });
             }
 
