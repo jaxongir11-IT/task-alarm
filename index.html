@@ -101,6 +101,22 @@
                         <span id="count-today" class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">0</span>
                     </button>
 
+                    <button onclick="changeView('daily')" id="nav-daily" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-arrows-rotate w-5 text-center text-emerald-400"></i>
+                            <span>Har kunlik</span>
+                        </div>
+                        <span id="count-daily" class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">0</span>
+                    </button>
+
+                    <button onclick="changeView('custom')" id="nav-custom" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-calendar-days w-5 text-center text-purple-400"></i>
+                            <span>Tanlangan kunlar</span>
+                        </div>
+                        <span id="count-custom" class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">0</span>
+                    </button>
+
                     <button onclick="changeView('upcoming')" id="nav-upcoming" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
                         <div class="flex items-center gap-3">
                             <i class="fa-solid fa-calendar-week w-5 text-center text-blue-400"></i>
@@ -329,11 +345,43 @@
 
                 <div>
                     <label class="block text-slate-300 font-semibold mb-1">Takrorlanish tartibi</label>
-                    <select id="input-repeat" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                    <select id="input-repeat" onchange="toggleCustomDaysVisibility()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
                         <option value="once">Bir martalik</option>
                         <option value="daily">Har kuni</option>
                         <option value="weekdays">Ish kunlari (Du–Ju)</option>
+                        <option value="custom">Tanlangan kunlar (Hafta kunlari)</option>
                     </select>
+                </div>
+
+                <!-- Tanlangan kunlar (Haftalik kunlarni tanlash) -->
+                <div id="custom-days-picker" class="hidden p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-200">Qaysi kunlarda chalinishi kerak?</span>
+                        <span class="text-[10px] text-indigo-400 font-medium" id="selected-days-count">0 ta tanlandi</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1.5 pt-1">
+                        <button type="button" onclick="toggleDaySelection(1)" id="day-btn-1" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Du
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(2)" id="day-btn-2" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Se
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(3)" id="day-btn-3" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Ch
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(4)" id="day-btn-4" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Pa
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(5)" id="day-btn-5" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Ju
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(6)" id="day-btn-6" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Sha
+                        </button>
+                        <button type="button" onclick="toggleDaySelection(0)" id="day-btn-0" class="py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition">
+                            Ya
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 border border-slate-700/60">
@@ -358,7 +406,27 @@
 
     <!-- BRAUZER MANTIQI VA BUDILNIK SINTEZI -->
     <script>
-        // 1. Dastlabki namunaviy ma'lumotlar (agar xotira bo'sh bo'lsa)
+        // Hafta kunlari lug'ati
+        const dayNamesMap = {
+            1: "Du",
+            2: "Se",
+            3: "Ch",
+            4: "Pa",
+            5: "Ju",
+            6: "Sha",
+            0: "Ya"
+        };
+        const fullDayNamesMap = {
+            1: "Dushanba",
+            2: "Seshanba",
+            3: "Chorshanba",
+            4: "Payshanba",
+            5: "Juma",
+            6: "Shanba",
+            0: "Yakshanba"
+        };
+
+        // 1. Dastlabki namunaviy ma'lumotlar (real ishlash namunalari bilan)
         const defaultTasks = [
             {
                 id: 1,
@@ -367,26 +435,51 @@
                 date: new Date().toISOString().split('T')[0],
                 time: "18:00",
                 repeat: "once",
+                customDays: [],
                 enabled: true,
                 completed: false
             },
             {
                 id: 2,
-                title: "Dasturlash darslarini takrorlash",
-                desc: "Android, Room va arxitektura bo'yicha tayyorgarlik",
+                title: "Ertalabki badantarbiya va yugurish",
+                desc: "Har kuni ertalab salomatlik uchun 20 daqiqa mashq",
                 date: new Date().toISOString().split('T')[0],
-                time: "20:00",
+                time: "07:00",
                 repeat: "daily",
+                customDays: [],
                 enabled: true,
                 completed: false
             },
             {
                 id: 3,
-                title: "Ingliz tili lug'at yodlash",
-                desc: "Kunlik 20 ta yangi so'zni takrorlash",
-                date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-                time: "09:00",
-                repeat: "weekdays",
+                title: "Ingliz tili darsi va speaking",
+                desc: "Dushanba, Chorshanba va Juma kunlari repetitor bilan dars",
+                date: new Date().toISOString().split('T')[0],
+                time: "15:30",
+                repeat: "custom",
+                customDays: [1, 3, 5], // Du, Ch, Ju
+                enabled: true,
+                completed: false
+            },
+            {
+                id: 4,
+                title: "Suzish mashg'uloti",
+                desc: "Seshanba, Payshanba va Shanba kunlari hovuzda shug'ullanish",
+                date: new Date().toISOString().split('T')[0],
+                time: "17:00",
+                repeat: "custom",
+                customDays: [2, 4, 6], // Se, Pa, Sha
+                enabled: true,
+                completed: false
+            },
+            {
+                id: 5,
+                title: "Kitob mutolaasi",
+                desc: "Har kuni uxlashdan oldin 15 sahifa o'qish",
+                date: new Date().toISOString().split('T')[0],
+                time: "22:00",
+                repeat: "daily",
+                customDays: [],
                 enabled: true,
                 completed: false
             }
@@ -395,6 +488,7 @@
         let tasks = JSON.parse(localStorage.getItem('task_alarm_desktop_data')) || defaultTasks;
         let activeView = 'all';
         let currentRingingTaskId = null;
+        let selectedCustomDays = [];
 
         function saveToStorage() {
             localStorage.setItem('task_alarm_desktop_data', JSON.stringify(tasks));
@@ -419,10 +513,11 @@
         setInterval(updateLiveClock, 1000);
         updateLiveClock();
 
-        // 3. Budilnik vaqtini tekshirish
+        // 3. Budilnik vaqtini tekshirish (REAL ISHLASH MANTIQI)
         let triggeredThisMinute = false;
         function checkAlarmTriggers(dateObj, currentTimeStr) {
             const todayStr = dateObj.toISOString().split('T')[0];
+            const currentDayOfWeek = dateObj.getDay(); // 0..6
             const seconds = dateObj.getSeconds();
 
             if (seconds === 0) triggeredThisMinute = false;
@@ -430,7 +525,19 @@
 
             tasks.forEach(t => {
                 if (t.enabled && !t.completed && t.time === currentTimeStr) {
-                    if (t.date === todayStr || t.repeat === 'daily') {
+                    let isDue = false;
+
+                    if (t.repeat === 'daily') {
+                        isDue = true;
+                    } else if (t.repeat === 'once' && t.date === todayStr) {
+                        isDue = true;
+                    } else if (t.repeat === 'weekdays' && [1, 2, 3, 4, 5].includes(currentDayOfWeek)) {
+                        isDue = true;
+                    } else if (t.repeat === 'custom' && Array.isArray(t.customDays) && t.customDays.includes(currentDayOfWeek)) {
+                        isDue = true;
+                    }
+
+                    if (isDue) {
                         triggeredThisMinute = true;
                         triggerAlarmModal(t);
                     }
@@ -550,11 +657,62 @@
             }, 3000);
         }
 
-        // 5. Dashboard renderi
+        // 5. Tanlangan kunlarni boshqarish (Custom Days Selection UI)
+        function toggleCustomDaysVisibility() {
+            const repeatVal = document.getElementById('input-repeat').value;
+            const picker = document.getElementById('custom-days-picker');
+            if (repeatVal === 'custom') {
+                picker.classList.remove('hidden');
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+
+        function toggleDaySelection(dayIndex) {
+            const idx = selectedCustomDays.indexOf(dayIndex);
+            if (idx > -1) {
+                selectedCustomDays.splice(idx, 1);
+            } else {
+                selectedCustomDays.push(dayIndex);
+            }
+            renderCustomDaysSelection();
+        }
+
+        function renderCustomDaysSelection() {
+            const allDays = [1, 2, 3, 4, 5, 6, 0];
+            allDays.forEach(day => {
+                const btn = document.getElementById(`day-btn-${day}`);
+                if (!btn) return;
+                if (selectedCustomDays.includes(day)) {
+                    btn.className = "py-2 rounded-xl text-center font-bold text-xs bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-500 transition cursor-pointer";
+                } else {
+                    btn.className = "py-2 rounded-xl text-center font-bold text-xs bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer";
+                }
+            });
+
+            const countEl = document.getElementById('selected-days-count');
+            if (countEl) {
+                if (selectedCustomDays.length === 0) {
+                    countEl.textContent = "Kun tanlanmagan";
+                    countEl.className = "text-[10px] text-rose-400 font-medium";
+                } else {
+                    const sortedNames = [1, 2, 3, 4, 5, 6, 0]
+                        .filter(d => selectedCustomDays.includes(d))
+                        .map(d => dayNamesMap[d])
+                        .join(", ");
+                    countEl.textContent = `${selectedCustomDays.length} ta: ${sortedNames}`;
+                    countEl.className = "text-[10px] text-indigo-400 font-medium";
+                }
+            }
+        }
+
+        // 6. Dashboard renderi va Ko'rinishlarni almashtirish
         function changeView(view) {
             activeView = view;
-            ['all', 'today', 'upcoming', 'completed'].forEach(v => {
+            const navItems = ['all', 'today', 'daily', 'custom', 'upcoming', 'completed'];
+            navItems.forEach(v => {
                 const el = document.getElementById(`nav-${v}`);
+                if (!el) return;
                 if (v === view) {
                     el.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold transition shadow-md shadow-indigo-600/20";
                 } else {
@@ -564,27 +722,46 @@
 
             const titles = {
                 all: ["Barcha Vazifalar", "Barcha rejalashtirilgan budilnik va eslatmalar"],
-                today: ["Bugungi Vazifalar", "Bugun bajarilishi kerak bo'lgan ishlar ro'yxati"],
-                upcoming: ["Kelgusi Vazifalar", "Oldindagi kunlarga belgilangan rejalar"],
+                today: ["Bugungi Vazifalar", "Bugun chalinishi va bajarilishi kerak bo'lgan ishlar ro'yxati"],
+                daily: ["Har Kunlik Vazifalar", "Har kuni takrorlanuvchi muntazam budilniklar"],
+                custom: ["Tanlangan Kunlar", "Haftaning tanlangan kunlarida chalinadigan vazifalar"],
+                upcoming: ["Kelgusi Vazifalar", "Oldindagi kunlarga belgilangan bir martalik rejalar"],
                 completed: ["Bajarilgan Vazifalar", "Muvaffaqiyatli yakunlangan vazifalar tarixi"]
             };
-            document.getElementById('view-title').textContent = titles[view][0];
-            document.getElementById('view-subtitle').textContent = titles[view][1];
+
+            if (titles[view]) {
+                document.getElementById('view-title').textContent = titles[view][0];
+                document.getElementById('view-subtitle').textContent = titles[view][1];
+            }
 
             renderDashboard();
         }
 
+        function isTaskDueToday(task, todayStr, currentDayOfWeek) {
+            if (task.repeat === 'daily') return true;
+            if (task.repeat === 'once' && task.date === todayStr) return true;
+            if (task.repeat === 'weekdays' && [1, 2, 3, 4, 5].includes(currentDayOfWeek)) return true;
+            if (task.repeat === 'custom' && Array.isArray(task.customDays) && task.customDays.includes(currentDayOfWeek)) return true;
+            return false;
+        }
+
         function renderDashboard() {
-            const todayStr = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const currentDayOfWeek = now.getDay(); // 0..6
 
             // Hisob-kitoblar
             const total = tasks.length;
-            const todayCount = tasks.filter(t => !t.completed && (t.date === todayStr || t.repeat === 'daily')).length;
-            const upcomingCount = tasks.filter(t => !t.completed && t.date > todayStr && t.repeat !== 'daily').length;
+            const todayCount = tasks.filter(t => !t.completed && isTaskDueToday(t, todayStr, currentDayOfWeek)).length;
+            const dailyCount = tasks.filter(t => !t.completed && t.repeat === 'daily').length;
+            const customCount = tasks.filter(t => !t.completed && t.repeat === 'custom').length;
+            const upcomingCount = tasks.filter(t => !t.completed && t.repeat === 'once' && t.date > todayStr).length;
             const completedCount = tasks.filter(t => t.completed).length;
 
             document.getElementById('count-all').textContent = total;
             document.getElementById('count-today').textContent = todayCount;
+            document.getElementById('count-daily').textContent = dailyCount;
+            document.getElementById('count-custom').textContent = customCount;
             document.getElementById('count-upcoming').textContent = upcomingCount;
             document.getElementById('count-completed').textContent = completedCount;
 
@@ -596,9 +773,13 @@
             // Filtrlash
             let list = [];
             if (activeView === 'today') {
-                list = tasks.filter(t => !t.completed && (t.date === todayStr || t.repeat === 'daily'));
+                list = tasks.filter(t => !t.completed && isTaskDueToday(t, todayStr, currentDayOfWeek));
+            } else if (activeView === 'daily') {
+                list = tasks.filter(t => t.repeat === 'daily');
+            } else if (activeView === 'custom') {
+                list = tasks.filter(t => t.repeat === 'custom');
             } else if (activeView === 'upcoming') {
-                list = tasks.filter(t => !t.completed && t.date > todayStr && t.repeat !== 'daily');
+                list = tasks.filter(t => !t.completed && t.repeat === 'once' && t.date > todayStr);
             } else if (activeView === 'completed') {
                 list = tasks.filter(t => t.completed);
             } else {
@@ -619,26 +800,56 @@
                 const card = document.createElement('div');
                 card.className = `p-5 rounded-2xl border transition duration-200 flex flex-col justify-between ${task.completed ? 'bg-slate-900/40 border-slate-800 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700 shadow-sm'}`;
 
-                const repeatText = task.repeat === 'daily' ? 'Har kuni' : task.repeat === 'weekdays' ? 'Du–Ju' : 'Bir martalik';
+                // Takrorlanish yorlig'i va nishonlari
+                let repeatBadgeHtml = '';
+                const dueToday = isTaskDueToday(task, todayStr, currentDayOfWeek);
+
+                if (task.repeat === 'daily') {
+                    repeatBadgeHtml = `<span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1"><i class="fa-solid fa-arrows-rotate text-[9px]"></i> Har kuni</span>`;
+                } else if (task.repeat === 'weekdays') {
+                    repeatBadgeHtml = `<span class="px-2 py-0.5 rounded-md bg-blue-500/15 text-[10px] font-bold text-blue-400 border border-blue-500/30">Ish kunlari (Du–Ju)</span>`;
+                } else if (task.repeat === 'custom') {
+                    const daysArr = Array.isArray(task.customDays) ? task.customDays : [];
+                    const dayBadges = [1, 2, 3, 4, 5, 6, 0].map(d => {
+                        const isSelected = daysArr.includes(d);
+                        const isToday = (d === currentDayOfWeek);
+                        if (isSelected) {
+                            return `<span class="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold ${isToday ? 'bg-amber-500 text-slate-950 font-black' : 'bg-indigo-600 text-white'}">${dayNamesMap[d]}</span>`;
+                        } else {
+                            return `<span class="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-medium bg-slate-800/80 text-slate-600">${dayNamesMap[d]}</span>`;
+                        }
+                    }).join('');
+                    repeatBadgeHtml = `<div class="flex items-center gap-0.5">${dayBadges}</div>`;
+                } else {
+                    repeatBadgeHtml = `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-semibold text-slate-300 border border-slate-700">Bir martalik</span>`;
+                }
+
+                // Bugun chalinadimi yoki yo'q indikatori
+                const todayStatusIndicator = (dueToday && !task.completed && task.enabled) 
+                    ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-bell text-[9px]"></i> Bugun chalinadi</span>`
+                    : '';
 
                 card.innerHTML = `
                     <div>
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
-                                <button onclick="toggleTaskComplete(${task.id})" class="w-6 h-6 rounded-lg border ${task.completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-600 hover:border-indigo-500'} flex items-center justify-center text-xs transition">
+                                <button onclick="toggleTaskComplete(${task.id})" class="w-6 h-6 rounded-lg border ${task.completed ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-600 hover:border-indigo-500'} flex items-center justify-center text-xs transition cursor-pointer">
                                     ${task.completed ? '<i class="fa-solid fa-check"></i>' : ''}
                                 </button>
                                 <div>
                                     <div class="flex items-center gap-2">
                                         <span class="text-2xl font-black font-mono ${task.enabled && !task.completed ? 'text-indigo-400' : 'text-slate-400'}">${task.time}</span>
-                                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-semibold text-slate-300 border border-slate-700">${repeatText}</span>
+                                        ${repeatBadgeHtml}
                                     </div>
-                                    <span class="text-xs text-slate-500">${task.date}</span>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-xs text-slate-500">${task.repeat === 'custom' ? 'Tanlangan kunlar' : (task.repeat === 'daily' ? 'Har kunlik reja' : task.date)}</span>
+                                        ${todayStatusIndicator}
+                                    </div>
                                 </div>
                             </div>
 
                             ${!task.completed ? `
-                                <button onclick="toggleTaskEnable(${task.id})" class="w-11 h-6 rounded-full transition p-0.5 flex items-center ${task.enabled ? 'bg-indigo-600 justify-end' : 'bg-slate-700 justify-start'}">
+                                <button onclick="toggleTaskEnable(${task.id})" class="w-11 h-6 rounded-full transition p-0.5 flex items-center cursor-pointer ${task.enabled ? 'bg-indigo-600 justify-end' : 'bg-slate-700 justify-start'}">
                                     <span class="w-5 h-5 bg-white rounded-full shadow-md"></span>
                                 </button>
                             ` : `
@@ -659,10 +870,10 @@
                         </span>
 
                         <div class="flex items-center gap-2">
-                            <button onclick="editTask(${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-400 transition" title="Tahrirlash">
+                            <button onclick="editTask(${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-400 transition cursor-pointer" title="Tahrirlash">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                            <button onclick="deleteTask(${task.id})" class="p-1.5 text-slate-400 hover:text-rose-400 transition" title="O'chirish">
+                            <button onclick="deleteTask(${task.id})" class="p-1.5 text-slate-400 hover:text-rose-400 transition cursor-pointer" title="O'chirish">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
@@ -696,7 +907,7 @@
             }
         }
 
-        // Modal boshqaruvi
+        // 7. Modal boshqaruvi (Vazifa Qo'shish / Tahrirlash)
         function openTaskModal(task = null) {
             const modal = document.getElementById('task-modal');
             const heading = document.getElementById('modal-heading');
@@ -709,7 +920,9 @@
                 document.getElementById('input-desc').value = task.desc || '';
                 document.getElementById('input-date').value = task.date;
                 document.getElementById('input-time').value = task.time;
-                document.getElementById('input-repeat').value = task.repeat;
+                document.getElementById('input-repeat').value = task.repeat || 'once';
+                
+                selectedCustomDays = Array.isArray(task.customDays) ? [...task.customDays] : [];
             } else {
                 heading.innerHTML = `<i class="fa-solid fa-plus-circle text-indigo-400"></i> Yangi Vazifa Qo'shish`;
                 editId.value = '';
@@ -718,8 +931,12 @@
                 document.getElementById('input-date').value = now.toISOString().split('T')[0];
                 now.setHours(now.getHours() + 1);
                 document.getElementById('input-time').value = `${String(now.getHours()).padStart(2, '0')}:00`;
+                document.getElementById('input-repeat').value = 'once';
+                selectedCustomDays = [];
             }
 
+            toggleCustomDaysVisibility();
+            renderCustomDaysSelection();
             modal.classList.remove('hidden');
         }
 
@@ -741,6 +958,11 @@
             const time = document.getElementById('input-time').value;
             const repeat = document.getElementById('input-repeat').value;
 
+            if (repeat === 'custom' && selectedCustomDays.length === 0) {
+                alert("Iltimos, budilnik chalinishi kerak bo'lgan kamida bitta hafta kunini tanlang (masalan: Du, Se, Ch...)!");
+                return;
+            }
+
             if (editId) {
                 const task = tasks.find(t => t.id == editId);
                 if (task) {
@@ -749,6 +971,7 @@
                     task.date = date;
                     task.time = time;
                     task.repeat = repeat;
+                    task.customDays = (repeat === 'custom') ? [...selectedCustomDays] : [];
                     task.enabled = true;
                     task.completed = false;
                 }
@@ -760,6 +983,7 @@
                     date,
                     time,
                     repeat,
+                    customDays: (repeat === 'custom') ? [...selectedCustomDays] : [],
                     enabled: true,
                     completed: false
                 });
@@ -767,6 +991,7 @@
 
             closeTaskModal();
             saveToStorage();
+            showToast("💾 Vazifa muvaffaqiyatli saqlandi!", "indigo");
         }
 
         function openDownloadModal() {
