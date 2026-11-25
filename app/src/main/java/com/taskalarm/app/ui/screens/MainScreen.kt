@@ -1,6 +1,5 @@
 package com.taskalarm.app.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -32,20 +31,24 @@ import java.util.*
 @Composable
 fun MainScreen(
     viewModel: TaskViewModel,
-    onAddTaskClick: () -> Unit,
+    onAddTaskClick: (Int) -> Unit,
     onEditTaskClick: (Task) -> Unit,
     onOpenPermissions: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Bugungi", "Kelgusi", "Bajarilgan")
+    val tabTitles = listOf("Bugungi", "Har kunlik", "Tanlangan kunlar", "Kelgusi", "Bajarilgan")
 
     val todayTasks by viewModel.todayTasks.collectAsState()
+    val dailyTasks by viewModel.dailyTasks.collectAsState()
+    val customDayTasks by viewModel.customDayTasks.collectAsState()
     val upcomingTasks by viewModel.upcomingTasks.collectAsState()
     val completedTasks by viewModel.completedTasks.collectAsState()
 
     val currentTasks = when (selectedTabIndex) {
         0 -> todayTasks
-        1 -> upcomingTasks
+        1 -> dailyTasks
+        2 -> customDayTasks
+        3 -> upcomingTasks
         else -> completedTasks
     }
 
@@ -92,7 +95,7 @@ fun MainScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddTaskClick,
+                onClick = { onAddTaskClick(selectedTabIndex) },
                 containerColor = PrimaryIndigo,
                 contentColor = Color.White,
                 shape = CircleShape,
@@ -111,16 +114,19 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Tab bo'limlari: Bugungi, Kelgusi, Bajarilgan
-            TabRow(
+            // Scrollable Tab bo'limlari: Bugungi, Har kunlik, Tanlangan kunlar, Kelgusi, Bajarilgan
+            ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
+                edgePadding = 12.dp,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = PrimaryIndigo
             ) {
                 tabTitles.forEachIndexed { index, title ->
                     val badgeCount = when (index) {
                         0 -> todayTasks.size
-                        1 -> upcomingTasks.size
+                        1 -> dailyTasks.size
+                        2 -> customDayTasks.size
+                        3 -> upcomingTasks.size
                         else -> completedTasks.size
                     }
                     Tab(
@@ -161,6 +167,7 @@ fun MainScreen(
                     items(currentTasks, key = { it.id }) { task ->
                         TaskItemCard(
                             task = task,
+                            nextTriggerMillis = viewModel.getNextTriggerMillis(task),
                             onToggleEnable = { isEnabled ->
                                 viewModel.toggleTask(task, isEnabled)
                             },
@@ -184,6 +191,7 @@ fun MainScreen(
 @Composable
 fun TaskItemCard(
     task: Task,
+    nextTriggerMillis: Long,
     onToggleEnable: (Boolean) -> Unit,
     onToggleComplete: (Boolean) -> Unit,
     onEdit: () -> Unit,
@@ -194,9 +202,14 @@ fun TaskItemCard(
     val taskCalendar = Calendar.getInstance().apply { timeInMillis = task.triggerTimeMillis }
 
     val formattedTime = timeFormat.format(taskCalendar.time)
-    val formattedDate = dateFormat.format(taskCalendar.time)
-    val remainingTimeText = remember(task.triggerTimeMillis) {
-        TaskViewModel.formatRemainingTime(task.triggerTimeMillis)
+    val formattedDate = when (task.repeatMode) {
+        RepeatMode.DAILY -> "Har kunlik reja"
+        RepeatMode.WEEKDAYS -> "Ish kunlari (Du–Ju)"
+        RepeatMode.CUSTOM_DAYS -> "Tanlangan kunlar"
+        RepeatMode.ONCE -> dateFormat.format(taskCalendar.time)
+    }
+    val remainingTimeText = remember(nextTriggerMillis) {
+        TaskViewModel.formatRemainingTime(nextTriggerMillis)
     }
 
     var menuExpanded by remember { mutableStateOf(false) }
@@ -306,6 +319,44 @@ fun TaskItemCard(
                 }
             }
 
+            // Tanlangan kunlar chiplari (agar CUSTOM_DAYS bo'lsa)
+            if (task.repeatMode == RepeatMode.CUSTOM_DAYS && task.customDays.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val selectedSet = task.customDays.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+                val todayNum = TaskViewModel.calendarDayToCustomDay(Calendar.getInstance().get(Calendar.DAY_OF_WEEK))
+                val dayLabels = listOf(1 to "Du", 2 to "Se", 3 to "Ch", 4 to "Pa", 5 to "Ju", 6 to "Sha", 7 to "Ya")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    dayLabels.forEach { (num, label) ->
+                        val isSelected = selectedSet.contains(num)
+                        val isToday = (num == todayNum)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    when {
+                                        isSelected && isToday -> AccentOrange
+                                        isSelected -> PrimaryIndigo
+                                        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    }
+                                )
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
             Divider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(8.dp))
@@ -358,7 +409,9 @@ fun TaskItemCard(
 fun EmptyStateView(tabIndex: Int) {
     val message = when (tabIndex) {
         0 -> "Bugun uchun vazifalar yo'q.\nYangi vazifa qo'shish uchun '+' tugmasini bosing!"
-        1 -> "Kelgusi kunlarga vazifalar rejalashtirilmagan."
+        1 -> "Har kunlik takrorlanuvchi vazifalar yo'q.\n'+' tugmasini bosib qo'shing!"
+        2 -> "Tanlangan hafta kunlariga vazifalar qo'shilmagan.\n'+' tugmasini bosib hafta kunlarini belgilang!"
+        3 -> "Kelgusi kunlarga vazifalar rejalashtirilmagan."
         else -> "Hozircha bajarilgan vazifalar yo'q."
     }
 
@@ -379,7 +432,12 @@ fun EmptyStateView(tabIndex: Int) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (tabIndex == 2) Icons.Default.TaskAlt else Icons.Default.EventNote,
+                    imageVector = when (tabIndex) {
+                        1 -> Icons.Default.Repeat
+                        2 -> Icons.Default.DateRange
+                        4 -> Icons.Default.TaskAlt
+                        else -> Icons.Default.EventNote
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(46.dp),
                     tint = PrimaryIndigo

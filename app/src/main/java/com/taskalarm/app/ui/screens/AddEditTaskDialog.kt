@@ -37,6 +37,7 @@ import java.util.*
 @Composable
 fun AddEditTaskDialog(
     taskToEdit: Task? = null,
+    defaultRepeatMode: RepeatMode = RepeatMode.ONCE,
     onDismiss: () -> Unit,
     onSave: (Task) -> Unit,
     onSelectRingtone: () -> Unit,
@@ -45,7 +46,7 @@ fun AddEditTaskDialog(
     val context = LocalContext.current
     var title by remember { mutableStateOf(taskToEdit?.title ?: "") }
     var description by remember { mutableStateOf(taskToEdit?.description ?: "") }
-    var repeatMode by remember { mutableStateOf(taskToEdit?.repeatMode ?: RepeatMode.ONCE) }
+    var repeatMode by remember { mutableStateOf(taskToEdit?.repeatMode ?: defaultRepeatMode) }
     var isVibrationEnabled by remember { mutableStateOf(taskToEdit?.isVibrationEnabled ?: true) }
     var ringtoneUri by remember { mutableStateOf(taskToEdit?.ringtoneUri ?: "") }
 
@@ -73,6 +74,8 @@ fun AddEditTaskDialog(
         mutableStateListOf<Int>().apply {
             if (taskToEdit?.customDays?.isNotBlank() == true) {
                 addAll(taskToEdit.customDays.split(",").mapNotNull { it.trim().toIntOrNull() })
+            } else if (taskToEdit == null && defaultRepeatMode == RepeatMode.CUSTOM_DAYS) {
+                add(com.taskalarm.app.ui.viewmodel.TaskViewModel.calendarDayToCustomDay(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)))
             }
         }
     }
@@ -347,7 +350,7 @@ fun AddEditTaskDialog(
                                 onSave(newTask)
                             }
                         },
-                        enabled = title.isNotBlank(),
+                        enabled = title.isNotBlank() && (repeatMode != RepeatMode.CUSTOM_DAYS || customDaysSet.isNotEmpty()),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Saqlash")

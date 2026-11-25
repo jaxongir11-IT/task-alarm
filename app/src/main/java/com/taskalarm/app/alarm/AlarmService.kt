@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.taskalarm.app.R
 import com.taskalarm.app.data.AppDatabase
+import com.taskalarm.app.data.RepeatMode
 import com.taskalarm.app.ui.screens.AlarmRingActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,6 +155,9 @@ class AlarmService : Service() {
             startVibration()
         }
 
+        // Agar vazifa takrorlanuvchi bo'lsa (Har kuni, Ish kunlari, Tanlangan kunlar), keyingi safar ham jiringlashi uchun rejalashtirish
+        scheduleNextOccurrenceIfRepeating(taskId)
+
         // Shuningdek, ekran yoqiq bo'lsa yoki ba'zi modellarda intentni to'g'ridan-to'g'ri chaqirish
         try {
             startActivity(fullScreenIntent)
@@ -212,13 +216,39 @@ class AlarmService : Service() {
         stopSelf()
     }
 
+    private fun scheduleNextOccurrenceIfRepeating(taskId: Long) {
+        if (taskId == -1L) return
+        serviceScope.launch {
+            val db = AppDatabase.getInstance(applicationContext)
+            val task = db.taskDao().getTaskById(taskId)
+            if (task != null && task.isEnabled && !task.isCompleted && task.repeatMode != RepeatMode.ONCE) {
+                val scheduler = AlarmScheduler(applicationContext)
+                val nextTime = scheduler.calculateNextTriggerTime(task)
+                if (nextTime > System.currentTimeMillis()) {
+                    val updatedTask = task.copy(triggerTimeMillis = nextTime)
+                    db.taskDao().updateTask(updatedTask)
+                    scheduler.schedule(updatedTask)
+                }
+            }
+        }
+    }
+
     private fun handleComplete(taskId: Long) {
         serviceScope.launch {
             if (taskId != -1L) {
                 val db = AppDatabase.getInstance(applicationContext)
                 val task = db.taskDao().getTaskById(taskId)
                 if (task != null) {
-                    db.taskDao().updateTask(task.copy(isCompleted = true, isEnabled = false))
+                    if (task.repeatMode == RepeatMode.ONCE) {
+                        db.taskDao().updateTask(task.copy(isCompleted = true, isEnabled = false))
+                    } else {
+                        // Takrorlanuvchi vazifa uchun keyingi kun/hafta kunini faol qoldiramiz
+                        val scheduler = AlarmScheduler(applicationContext)
+                        val nextTime = scheduler.calculateNextTriggerTime(task)
+                        val updatedTask = task.copy(triggerTimeMillis = nextTime, isEnabled = true)
+                        db.taskDao().updateTask(updatedTask)
+                        scheduler.schedule(updatedTask)
+                    }
                 }
             }
         }

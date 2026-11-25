@@ -54,11 +54,11 @@
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-    <!-- ASOSIY DESKTOP INTERFEYS -->
-    <div class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    <!-- ASOSIY DESKTOP VA MOBIL INTERFEYS -->
+    <div class="flex-1 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
         
-        <!-- 1. CHAP SIDEBAR (Desktop Menyusi) -->
-        <aside class="w-full md:w-72 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+        <!-- 1. CHAP SIDEBAR (Kompyuter / Desktop Menyusi) -->
+        <aside class="hidden md:flex md:w-72 bg-slate-900 border-r border-slate-800 flex-col justify-between shrink-0">
             <div>
                 <!-- Brand / Logo -->
                 <div class="p-6 border-b border-slate-800 flex items-center justify-between">
@@ -139,20 +139,54 @@
             <div class="p-4 m-4 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/30 text-xs">
                 <div class="flex items-center gap-2 text-emerald-400 font-bold mb-1">
                     <i class="fa-brands fa-android text-base"></i>
-                    <span>Android Ilova (APK)</span>
+                    <span>Android Ilova (APK v2.0)</span>
                 </div>
-                <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Telefoningizga o'rnatish uchun tayyor faylni yuklab oling.</p>
+                <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Telefoningizga o'rnatish uchun tayyor eng yangi faylni yuklab oling.</p>
                 <button onclick="openDownloadModal()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-center block transition shadow-md shadow-emerald-600/30 cursor-pointer">
                     <i class="fa-solid fa-download mr-1.5"></i> APK Yuklab Olish
                 </button>
             </div>
         </aside>
 
-        <!-- 2. ASOSIY KENG ISH MAYDONI (Main Content) -->
-        <main class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+        <!-- 2. ASOSIY KENG ISH MAYDONI (Desktop va Mobil Content) -->
+        <main class="flex-1 flex flex-col bg-slate-950 md:overflow-hidden pb-20 md:pb-0">
             
-            <!-- Topbar / Header -->
-            <header class="px-8 py-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-900/40 backdrop-blur">
+            <!-- Mobil ekranlar uchun maxsus ixcham Topbar va Tablar -->
+            <div class="md:hidden sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white text-base shadow-md">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-sm font-bold text-white leading-tight">Vazifalar Budilnigi</h1>
+                            <div class="flex items-center gap-1.5 text-[11px] text-indigo-400 font-mono font-semibold">
+                                <span id="mobile-live-time">12:00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openDownloadModal()" class="px-2.5 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 shadow-md">
+                            <i class="fa-brands fa-android"></i> APK
+                        </button>
+                        <button onclick="triggerTestAlarm()" class="px-2.5 py-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-bell"></i> Sinash
+                        </button>
+                    </div>
+                </div>
+                <!-- Mobil gorizontal tablar -->
+                <div class="flex overflow-x-auto gap-1.5 px-4 pb-3 text-xs font-medium">
+                    <button onclick="changeView('all')" id="mnav-all" class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold">Barchasi <span id="mcount-all" class="ml-1 opacity-80">0</span></button>
+                    <button onclick="changeView('today')" id="mnav-today" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Bugungi <span id="mcount-today" class="ml-1 opacity-80">0</span></button>
+                    <button onclick="changeView('daily')" id="mnav-daily" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Har kunlik <span id="mcount-daily" class="ml-1 opacity-80">0</span></button>
+                    <button onclick="changeView('custom')" id="mnav-custom" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Tanlangan kunlar <span id="mcount-custom" class="ml-1 opacity-80">0</span></button>
+                    <button onclick="changeView('upcoming')" id="mnav-upcoming" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Kelgusi <span id="mcount-upcoming" class="ml-1 opacity-80">0</span></button>
+                    <button onclick="changeView('completed')" id="mnav-completed" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">Bajarilgan <span id="mcount-completed" class="ml-1 opacity-80">0</span></button>
+                </div>
+            </div>
+
+            <!-- Desktop Topbar / Header -->
+            <header class="hidden md:flex px-8 py-5 border-b border-slate-800 flex-wrap items-center justify-between gap-4 bg-slate-900/40 backdrop-blur">
                 <div>
                     <h2 id="view-title" class="text-2xl font-bold text-white">Barcha Vazifalar</h2>
                     <p id="view-subtitle" class="text-xs text-slate-400 mt-0.5">Vazifalar va ularning avtomatik eslatish vaqti</p>
@@ -180,54 +214,59 @@
             </header>
 
             <!-- Statistika vidjetlari (3 ta karta) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 px-8 pt-6 pb-2">
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
+            <div class="grid grid-cols-3 gap-2.5 md:gap-5 px-4 md:px-8 pt-4 md:pt-6 pb-2">
+                <div class="p-3 md:p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
                     <div>
-                        <p class="text-xs font-medium text-slate-400">Jami Vazifalar</p>
-                        <h3 id="stat-total" class="text-2xl font-bold text-white mt-1">0</h3>
+                        <p class="text-[10px] md:text-xs font-medium text-slate-400">Jami</p>
+                        <h3 id="stat-total" class="text-lg md:text-2xl font-bold text-white mt-0.5 md:mt-1">0</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-lg">
+                    <div class="hidden sm:flex w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 items-center justify-center text-indigo-400 text-lg">
                         <i class="fa-solid fa-layer-group"></i>
                     </div>
                 </div>
 
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
+                <div class="p-3 md:p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
                     <div>
-                        <p class="text-xs font-medium text-slate-400">Bugun Bajarilishi Kerak</p>
-                        <h3 id="stat-today" class="text-2xl font-bold text-amber-400 mt-1">0</h3>
+                        <p class="text-[10px] md:text-xs font-medium text-slate-400">Bugungi</p>
+                        <h3 id="stat-today" class="text-lg md:text-2xl font-bold text-amber-400 mt-0.5 md:mt-1">0</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
+                    <div class="hidden sm:flex w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 items-center justify-center text-amber-400 text-lg">
                         <i class="fa-solid fa-stopwatch"></i>
                     </div>
                 </div>
 
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
+                <div class="p-3 md:p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-sm">
                     <div>
-                        <p class="text-xs font-medium text-slate-400">Bajarilish Samaradorligi</p>
-                        <h3 id="stat-percent" class="text-2xl font-bold text-emerald-400 mt-1">0%</h3>
+                        <p class="text-[10px] md:text-xs font-medium text-slate-400">Bajarildi</p>
+                        <h3 id="stat-percent" class="text-lg md:text-2xl font-bold text-emerald-400 mt-0.5 md:mt-1">0%</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
+                    <div class="hidden sm:flex w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 items-center justify-center text-emerald-400 text-lg">
                         <i class="fa-solid fa-circle-check"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Vazifalar ro'yxati (Desktop Grid / Cards) -->
-            <div class="flex-1 overflow-y-auto px-8 py-5">
-                <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Vazifalar ro'yxati (Desktop & Mobil Grid / Cards) -->
+            <div class="flex-1 md:overflow-y-auto px-4 md:px-8 py-4 md:py-5">
+                <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     <!-- Javascript orqali to'ldiriladi -->
                 </div>
 
                 <!-- Bo'sh holat (Empty State) -->
-                <div id="empty-state" class="hidden h-96 flex flex-col items-center justify-center text-center p-8">
+                <div id="empty-state" class="hidden h-72 md:h-96 flex flex-col items-center justify-center text-center p-8">
                     <div class="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl text-slate-600 mb-4">
                         <i class="fa-solid fa-calendar-check"></i>
                     </div>
                     <h3 class="text-base font-bold text-slate-300">Hozircha vazifalar yo'q</h3>
-                    <p class="text-xs text-slate-500 mt-1 max-w-sm">Ushbu bo'limda hech qanday vazifa topilmadi. Yuqoridagi "Yangi Vazifa" tugmasi orqali vazifa qo'shing.</p>
+                    <p class="text-xs text-slate-500 mt-1 max-w-sm">Ushbu bo'limda hech qanday vazifa topilmadi. "Yangi Vazifa" tugmasi orqali vazifa qo'shing.</p>
                 </div>
             </div>
         </main>
+
+        <!-- Telefonda suzuvchi '+' (FAB) tugmasi -->
+        <button onclick="openTaskModal()" class="md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-indigo-600/50 text-xl active:scale-95 transition">
+            <i class="fa-solid fa-plus"></i>
+        </button>
     </div>
 
     <!-- 3. KATTA KOMPYUTER UCHUN BUDILNIK CHALINISH OYNASI (FULL-SCREEN ALARM MODAL) -->
@@ -282,7 +321,7 @@
             </div>
 
             <h3 class="text-xl font-bold text-white">Vazifalar Budilnigi APK</h3>
-            <p class="text-xs text-slate-400 mt-1">Android qurilmalar uchun tayyor o'rnatish paketi (v1.0)</p>
+            <p class="text-xs text-slate-400 mt-1">Android qurilmalar uchun yangilangan paket (v2.0)</p>
 
             <div class="my-5 p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-left text-xs space-y-2">
                 <div class="flex justify-between text-slate-300">
@@ -290,8 +329,8 @@
                     <span class="font-semibold text-emerald-400">Android APK (.apk)</span>
                 </div>
                 <div class="flex justify-between text-slate-300">
-                    <span class="text-slate-500">Hajmi:</span>
-                    <span class="font-semibold">~15.5 MB</span>
+                    <span class="text-slate-500">Versiya:</span>
+                    <span class="font-semibold text-white">v2.0 (Har kunlik + Tanlangan kunlar)</span>
                 </div>
                 <div class="flex justify-between text-slate-300">
                     <span class="text-slate-500">Xususiyati:</span>
@@ -300,12 +339,12 @@
             </div>
 
             <div class="space-y-3">
-                <a href="https://github.com/jaxongir11-IT/task-alarm/releases/tag/v1.0" target="_blank" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer">
-                    <i class="fa-solid fa-download"></i> To'g'ridan-to'g'ri Yuklab Olish (Release)
+                <a href="https://github.com/jaxongir11-IT/task-alarm/releases/latest/download/TaskAlarm.apk" download="TaskAlarm.apk" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer">
+                    <i class="fa-solid fa-download"></i> To'g'ridan-to'g'ri Yuklab Olish (APK)
                 </a>
 
-                <a href="https://github.com/jaxongir11-IT/task-alarm/actions" target="_blank" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
-                    <i class="fa-brands fa-github text-base"></i> GitHub Actions orqali yuklab olish
+                <a href="https://github.com/jaxongir11-IT/task-alarm/releases/latest" target="_blank" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer">
+                    <i class="fa-brands fa-github text-base"></i> Reliz sahifasini ochish
                 </a>
             </div>
         </div>
@@ -544,6 +583,8 @@
             const m = String(now.getMinutes()).padStart(2, '0');
             const s = String(now.getSeconds()).padStart(2, '0');
             document.getElementById('live-time').textContent = `${h}:${m}:${s}`;
+            const mobileClockEl = document.getElementById('mobile-live-time');
+            if (mobileClockEl) mobileClockEl.textContent = `${h}:${m}:${s}`;
 
             const days = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
             const months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
@@ -848,11 +889,20 @@
             const navItems = ['all', 'today', 'daily', 'custom', 'upcoming', 'completed'];
             navItems.forEach(v => {
                 const el = document.getElementById(`nav-${v}`);
-                if (!el) return;
-                if (v === view) {
-                    el.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold transition shadow-md shadow-indigo-600/20";
-                } else {
-                    el.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition";
+                if (el) {
+                    if (v === view) {
+                        el.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold transition shadow-md shadow-indigo-600/20";
+                    } else {
+                        el.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition";
+                    }
+                }
+                const mel = document.getElementById(`mnav-${v}`);
+                if (mel) {
+                    if (v === view) {
+                        mel.className = "shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold";
+                    } else {
+                        mel.className = "shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300";
+                    }
                 }
             });
 
@@ -900,6 +950,20 @@
             document.getElementById('count-custom').textContent = customCount;
             document.getElementById('count-upcoming').textContent = upcomingCount;
             document.getElementById('count-completed').textContent = completedCount;
+
+            // Mobil badge hisoblagichlari
+            const mcounts = {
+                all: total,
+                today: todayCount,
+                daily: dailyCount,
+                custom: customCount,
+                upcoming: upcomingCount,
+                completed: completedCount
+            };
+            Object.entries(mcounts).forEach(([k, v]) => {
+                const el = document.getElementById(`mcount-${k}`);
+                if (el) el.textContent = v;
+            });
 
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-today').textContent = todayCount;
@@ -961,8 +1025,10 @@
                     repeatBadgeHtml = `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-semibold text-slate-300 border border-slate-700">Bir martalik</span>`;
                 }
 
-                // Bugun chalinadimi yoki yo'q indikatori
-                const todayStatusIndicator = (dueToday && !doneToday && task.enabled) 
+                // Bugun chalinadimi yoki yo'q indikatori (faqat hali vaqti o'tmaganlar uchun)
+                const nextTrigger = getNextTriggerDate(task, now);
+                const willRingToday = dueToday && !doneToday && task.enabled && nextTrigger && getLocalDateStr(nextTrigger) === todayStr && nextTrigger.getTime() > now.getTime();
+                const todayStatusIndicator = willRingToday
                     ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-bell text-[9px]"></i> Bugun chalinadi</span>`
                     : '';
 

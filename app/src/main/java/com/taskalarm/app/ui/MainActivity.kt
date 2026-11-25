@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.taskalarm.app.data.RepeatMode
 import com.taskalarm.app.data.Task
 import com.taskalarm.app.ui.screens.AddEditTaskDialog
 import com.taskalarm.app.ui.screens.MainScreen
@@ -70,11 +71,17 @@ class MainActivity : ComponentActivity() {
                     var showPermissionsDialog by remember { mutableStateOf(isFirstRun) }
                     var showAddEditDialog by remember { mutableStateOf(false) }
                     var taskToEdit by remember { mutableStateOf<Task?>(null) }
+                    var defaultRepeatMode by remember { mutableStateOf(RepeatMode.ONCE) }
 
                     MainScreen(
                         viewModel = viewModel,
-                        onAddTaskClick = {
+                        onAddTaskClick = { tabIndex ->
                             taskToEdit = null
+                            defaultRepeatMode = when (tabIndex) {
+                                1 -> RepeatMode.DAILY
+                                2 -> RepeatMode.CUSTOM_DAYS
+                                else -> RepeatMode.ONCE
+                            }
                             selectedRingtoneUri = null
                             selectedRingtoneTitle = "Standart Budilnik Ovozi"
                             showAddEditDialog = true
@@ -119,6 +126,7 @@ class MainActivity : ComponentActivity() {
                     if (showAddEditDialog) {
                         AddEditTaskDialog(
                             taskToEdit = taskToEdit,
+                            defaultRepeatMode = defaultRepeatMode,
                             onDismiss = { showAddEditDialog = false },
                             onSave = { task ->
                                 val finalTask = if (selectedRingtoneUri != null) {

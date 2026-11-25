@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.taskalarm.app.alarm.AlarmScheduler
 import com.taskalarm.app.data.AppDatabase
+import com.taskalarm.app.data.RepeatMode
 import com.taskalarm.app.data.Task
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,15 +21,34 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val todayTasks: StateFlow<List<Task>> = allTasks.map { tasks ->
-        val calendar = Calendar.getInstance()
-        val currentYear = calendar.get(Calendar.YEAR)
-        val currentDayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
+        val now = Calendar.getInstance()
+        val currentYear = now.get(Calendar.YEAR)
+        val currentDayOfYear = now.get(Calendar.DAY_OF_YEAR)
+        val currentDayNum = calendarDayToCustomDay(now.get(Calendar.DAY_OF_WEEK))
 
         tasks.filter { task ->
             if (task.isCompleted) return@filter false
-            val taskCal = Calendar.getInstance().apply { timeInMillis = task.triggerTimeMillis }
-            taskCal.get(Calendar.YEAR) == currentYear && taskCal.get(Calendar.DAY_OF_YEAR) == currentDayOfYear
+            when (task.repeatMode) {
+                RepeatMode.DAILY -> true
+                RepeatMode.WEEKDAYS -> currentDayNum in 1..5
+                RepeatMode.CUSTOM_DAYS -> {
+                    val selected = task.customDays.split(",").mapNotNull { it.trim().toIntOrNull() }
+                    selected.contains(currentDayNum)
+                }
+                RepeatMode.ONCE -> {
+                    val taskCal = Calendar.getInstance().apply { timeInMillis = task.triggerTimeMillis }
+                    taskCal.get(Calendar.YEAR) == currentYear && taskCal.get(Calendar.DAY_OF_YEAR) == currentDayOfYear
+                }
+            }
         }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val dailyTasks: StateFlow<List<Task>> = allTasks.map { tasks ->
+        tasks.filter { !it.isCompleted && it.repeatMode == RepeatMode.DAILY }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val customDayTasks: StateFlow<List<Task>> = allTasks.map { tasks ->
+        tasks.filter { !it.isCompleted && it.repeatMode == RepeatMode.CUSTOM_DAYS }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val upcomingTasks: StateFlow<List<Task>> = allTasks.map { tasks ->
@@ -37,7 +57,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         val currentDayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
 
         tasks.filter { task ->
-            if (task.isCompleted) return@filter false
+            if (task.isCompleted || task.repeatMode != RepeatMode.ONCE) return@filter false
             val taskCal = Calendar.getInstance().apply { timeInMillis = task.triggerTimeMillis }
             taskCal.get(Calendar.YEAR) > currentYear ||
                     (taskCal.get(Calendar.YEAR) == currentYear && taskCal.get(Calendar.DAY_OF_YEAR) > currentDayOfYear)
@@ -50,18 +70,25 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveTask(task: Task) {
         viewModelScope.launch {
-            if (task.id == 0L) {
-                val newId = taskDao.insertTask(task)
-                val insertedTask = task.copy(id = newId)
+            val nextTrigger = if (task.repeatMode != RepeatMode.ONCE) {
+                alarmScheduler.calculateNextTriggerTime(task)
+            } else {
+                task.triggerTimeMillis
+            }
+            val preparedTask = task.copy(triggerTimeMillis = nextTrigger)
+
+            if (preparedTask.id == 0L) {
+                val newId = taskDao.insertTask(preparedTask)
+                val insertedTask = preparedTask.copy(id = newId)
                 if (insertedTask.isEnabled && !insertedTask.isCompleted) {
                     alarmScheduler.schedule(insertedTask)
                 }
             } else {
-                taskDao.updateTask(task)
-                if (task.isEnabled && !task.isCompleted) {
-                    alarmScheduler.schedule(task)
+                taskDao.updateTask(preparedTask)
+                if (preparedTask.isEnabled && !preparedTask.isCompleted) {
+                    alarmScheduler.schedule(preparedTask)
                 } else {
-                    alarmScheduler.cancel(task)
+                    alarmScheduler.cancel(preparedTask)
                 }
             }
         }
@@ -69,7 +96,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleTask(task: Task, isEnabled: Boolean) {
         viewModelScope.launch {
-            val updatedTask = task.copy(isEnabled = isEnabled)
+            val nextTrigger = if (isEnabled && task.repeatMode != RepeatMode.ONCE) {
+                alarmScheduler.calculateNextTriggerTime(task)
+            } else {
+                task.triggerTimeMillis
+            }
+            val updatedTask = task.copy(isEnabled = isEnabled, triggerTimeMillis = nextTrigger)
             taskDao.updateTask(updatedTask)
             if (isEnabled && !task.isCompleted) {
                 alarmScheduler.schedule(updatedTask)
@@ -98,11 +130,27 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun getNextTriggerMillis(task: Task): Long {
+        return alarmScheduler.calculateNextTriggerTime(task)
+    }
+
     companion object {
+        fun calendarDayToCustomDay(calendarDay: Int): Int {
+            return when (calendarDay) {
+                Calendar.MONDAY -> 1
+                Calendar.TUESDAY -> 2
+                Calendar.WEDNESDAY -> 3
+                Calendar.THURSDAY -> 4
+                Calendar.FRIDAY -> 5
+                Calendar.SATURDAY -> 6
+                else -> 7 // SUNDAY
+            }
+        }
+
         fun formatRemainingTime(triggerTimeMillis: Long): String {
             val now = System.currentTimeMillis()
             val diff = triggerTimeMillis - now
-            if (diff <= 0) return "Vaqti yetib kelgan"
+            if (diff <= 0) return "Vaqti o'tgan"
 
             val minutes = (diff / (1000 * 60)) % 60
             val hours = (diff / (1000 * 60 * 60)) % 24

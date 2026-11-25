@@ -39,12 +39,13 @@ jobs:
         name: TaskAlarm-apk
         path: TaskAlarm.apk
 
-    - name: Release APK
-      uses: softprops/action-gh-release@v1
+    - name: Release APK v2.0
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: "v1.0"
-        name: "Vazifalar Budilnigi APK (v1.0)"
-        body: "Android telefonlar uchun haqiqiy budilnikli Vazifalar Budilnigi ilovasi."
+        tag_name: "v2.0"
+        name: "Vazifalar Budilnigi APK (v2.0)"
+        body: "Yangilangan v2.0: Har kunlik va Tanlangan kunlar sahifalari, yangi HD logotip va yaxshilangan budilnik tizimi."
         files: TaskAlarm.apk
+        overwrite_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
